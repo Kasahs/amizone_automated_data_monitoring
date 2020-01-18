@@ -71,7 +71,7 @@ def close_popups():
 
 start_time = time.time()    #stores time at which program starts
 #----------FUNCTION CALLS----------
-login("7071804", "kalakand") #login
+login("username", "pass") #login
 close_popups() #close all popups
 #----------------------------------
 
