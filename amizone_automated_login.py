@@ -1,5 +1,6 @@
 #import sys
 import time
+import db
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -10,10 +11,11 @@ from selenium.webdriver.common.by import By
 #TODO: close all pop-ups without specifying name(done)
 #TODO: find the div id for the corresponding close button(done)
 #TODO: extract data from amizone using beautifulSoup
-#TODO: add data to database using mysql 
+#TODO: add data to database using mysql
 #TODO: make a mechanism to navigate myclasses through input and get data
 #TODO: figure out how to make useful information from data
 #TODO: organize code
+#TODO: do exception handling of the code
 #NOTE: program doesn't work if window is minimized
 
 #while(True):
@@ -28,9 +30,9 @@ driver.get(url) #getting amizone.net
 #function that enters login credentials
 def login(username, password):
     try:
-    #type | name=_UserName  
+    #type | name=_UserName
         driver.find_element(By.NAME, "_UserName").send_keys(username)
-    #type | name=_Password 
+    #type | name=_Password
         driver.find_element(By.NAME, "_Password").send_keys(password)
     #click | css=#loginform .login100-form-btn |  
         driver.find_element(By.CSS_SELECTOR, "#loginform .login100-form-btn").click()
@@ -71,7 +73,7 @@ def close_popups():
 
 start_time = time.time()    #stores time at which program starts
 #----------FUNCTION CALLS----------
-login("username", "pass") #login
+login("username", "password") #login
 close_popups() #close all popups
 #----------------------------------
 
@@ -126,28 +128,50 @@ page_soup = BeautifulSoup(content, "html.parser")
 page_soup_text = BeautifulSoup.prettify(page_soup)
 with open("amizone.html", "w") as file:
     file.write(page_soup_text)
-#scraping timetable data 
-divs_class_tab_pane = page_soup.findAll("div", {"class":"tab-pane"})    #finds and makes a list all the <div class="tab-pane in active" id="[day]">
+period_data = [] #list to make sql statement
+#scraping timetable data
+divs_class_tab_pane = page_soup.findAll("div", {"class":"tab-pane"})  #finds and makes a list all the <div class="tab-pane in active" id="[day]">
 for day_div in divs_class_tab_pane:    #selects each day's div from divs_class_tab_pane list
     print()
-    day = day_div["id"]    #gets the id attribute of div tag e.g <div class="tab-pane in active" id="Sunday"> returns the day
+    day = day_div["id"].strip()    #gets the id attribute of div tag e.g <div class="tab-pane in active" id="Sunday"> returns the day
     print(day)
     try:
-        div_thumbnail_timetable_box = day_div.findAll("div", {"class":"thumbnail timetable-box"})#find all <div class="thumbnail timetable-box"> elements which contains p tags of details of a class
+        #find all <div class="thumbnail timetable-box"> elements which contains p tags of details of a class
+        div_thumbnail_timetable_box = day_div.findAll("div", {"class":"thumbnail timetable-box"})
         if(len(div_thumbnail_timetable_box) == 0):
             print("no classes alloted yet")
     except:
         print("no classes today")
-    for ttbox in div_thumbnail_timetable_box:   #selecting element one at a time from div_thumbnail_timetable_box 
+    #selecting element one at a time from div_thumbnail_timetable_box
+    for ttbox in div_thumbnail_timetable_box:   
+        period_data.append(day) #appending day to list
         print()
-        class_time =  ttbox.find('p', {"class":"class-time"}).text  #get text from <p class="class-time"> the class time
+        #get text from <p class="class-time"> the class time
+        class_time = ttbox.find('p', {"class":"class-time"}).text.strip()
+        period_data.append(class_time) #appending class time to list
         print(class_time)
-        
-        course_code = ttbox.find('p', {"class":"course-code"}).text  #get text from <p class="course-code"> the course code
+        #get text from <p class="course-code"> the course code
+        course_code = ttbox.find('p', {"class":"course-code"}).text.strip()
+        period_data.append(course_code) #appending course_code to list
         print(course_code)
-        
-        course_teacher = ttbox.find('p', {"class":"course-teacher"}).text   #get text from <p class="course-teacher"> the course teacher
+        #get text from <p class="course-teacher"> the course teacher
+        course_teacher = ttbox.find('p', {"class":"course-teacher"}).text.strip()
+        period_data.append(course_teacher) #appending course_teacher to list
         print(course_teacher)
+        class_location = ttbox.find('p', {"class":"class-loc"}).text.strip()
+        period_data.append(class_location)
+        print(class_location)
+        print(period_data)
+
+        #connecting to database #TODO: exception handliling required here
+        mydb = db.establish_con("localhost", "manik", "sweetbread","amizone")
+        script = "','".join(period_data)
+        period_data.clear()
+        query = "INSERT INTO amizone.tt_data(`day`,`time`,course,teacher, class_loc) VALUES ('" + script + "');"
+        #running MySQL query in the database
+        mycursor = db.run_sql(mydb, query)
+        #mycursor = db.run_sql(mydb, "SELECT * FROM amizone.tt_data;")
+        mydb.commit()
 #driver.quit()
-print("execution time: %ss" % (round(time.time() - start_time ,5)))
+print("execution time: %ss" % (round(time.time() - start_time, 5)))
 #    time.sleep(10)
