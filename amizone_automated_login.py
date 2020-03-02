@@ -1,6 +1,7 @@
 # import sys
 import time
 import db
+import re
 from bs4 import BeautifulSoup
 from selenium.common import exceptions
 from selenium import webdriver
@@ -147,12 +148,12 @@ close_popups()  # closes all popups
 
 checkpoint = input("enter something to go ahead")
 #***scraping my Classes timetable***
-def my_Classes_tt(days_span = 7):
-    for i in range(1, days_span):
+def my_Classes_tt(days_span = 7, direction = 'backward'):
+    period_data = []
+    for _ in range(1, days_span):
         page_soup = page_content_to_file("amizone.html")
         date = driver.find_element(By.XPATH, "//*[@id='calendar']/div[1]/div[3]/h2").text
         print(date)
-        period_data = []
         myClasses_table = page_soup.find("table", {"class": "fc-list-table"})
         #print(myClasses_table)
         if(myClasses_table != None):
@@ -163,23 +164,46 @@ def my_Classes_tt(days_span = 7):
                 #print(trs_of_classes)
                 for tr in trs_of_classes:
                     class_time = tr.find("td", {"class":"fc-list-item-time fc-widget-content"}).text
-                    class_attendance = tr.find("td", {"class":"fc-list-item-marker fc-widget-content"}).span["style"]
+                    attendance_status_color = tr.find("td", {"class":"fc-list-item-marker fc-widget-content"}).span["style"]
+                    if(attendance_status_color == 'background-color:#4FCC4F'):
+                        attendance_status = "marked present"
+                    elif(attendance_status_color == 'background-color:#f00'):
+                        attendance_status = "marked absent"
+                    else:
+                        attendance_status = "not marked yet"
                     td_course_teacher_loc = tr.find("td", {"class":"fc-list-item-title fc-widget-content"})
-                    course_name = td_course_teacher_loc.find("span", {"class":"course-name"}).text.strip()
+                    course_code = td_course_teacher_loc.find("span", {"class":"course-name"}).text.strip()
+                    course_name = td_course_teacher_loc.find("a").text
                     teacher = td_course_teacher_loc.find("span", {"class":"course-teacher"}).text.strip()
+                    course_name = re.search(course_code + '(.+?)' + teacher.split()[0], course_name).group(1).strip()
+                    print(course_name)
                     class_loc = td_course_teacher_loc.find("span", {"class":"course-location"}).text.strip()
-                    period_data.extend([class_time, class_attendance,course_name,teacher,class_loc])
-                    
+                    period_data.append([date, class_time, course_code, course_name, teacher, class_loc, attendance_status])
                     print(period_data)
                     
         else:
             print("no classes today")
-        #click | css=.fc-icon-right-single-arrow |
-        driver.find_element(By.CSS_SELECTOR, ".fc-prev-button").click()
-        print("clicked on next")
-        time.sleep(2)
+        
+        if(direction == 'backward'):
+            #click | css=.fc-icon-right-single-arrow |
+            driver.find_element(By.CSS_SELECTOR, ".fc-prev-button").click()
+            print("clicked on prev")
+            time.sleep(2)
+        else:
+            driver.find_element(By.CSS_SELECTOR, ".fc-icon-right-single-arrow").click()
+            print("clicked on next")
+            time.sleep(2)
+    return period_data
 
-my_Classes_tt(10)
+mydb=db.establish_con("localhost", "manik", "sweetbread", "amizone")
+for periods in my_Classes_tt():
+    script_home_tt = "','".join(periods)
+    print(script_home_tt)
+    query_home_tt = "INSERT INTO amizone.homepage_tt(`date`,class_time,course_code,course_name,teacher, class_loc, attendance_status) VALUES ('" + script_home_tt + "');"
+    print(query_home_tt)
+    mycursor=db.run_sql(mydb, query_home_tt)
+    mydb.commit()
+            
 
 #***go to next/prev date in myClasses***
 prev_next_date = ""
@@ -265,12 +289,14 @@ for day_div in divs_class_tab_pane:  # selects each day's div from divs_class_ta
         # connecting to database #TODO: exception handliling required here
         mydb=db.establish_con("localhost", "manik", "sweetbread", "amizone")
         script="','".join(period_data)
-        period_data.clear()
+        #period_data.clear()
         query="INSERT INTO amizone.tt_data(`day`,`time`,course,teacher, class_loc) VALUES ('" + script + "');"
+        print(query)
         # running MySQL query in the database
         mycursor=db.run_sql(mydb, query)
         # mycursor = db.run_sql(mydb, "SELECT * FROM amizone.tt_data;")
         mydb.commit()
+        period_data.clear()
 
 # extra code
     # date = driver.find_element(By.XPATH, "//*[@id='calendar']/div[1]/div[3]/h2").text #to get the date of myClasses
