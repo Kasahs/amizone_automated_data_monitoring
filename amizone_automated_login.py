@@ -8,6 +8,7 @@ from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from mysql.connector import errors
 # from selenium.webdriver.support import expected_conditions as EC
 
 # TODO: try to get info without opening browser(not possible)
@@ -195,15 +196,22 @@ def my_Classes_tt(days_span = 7, direction = 'backward'):
             time.sleep(2)
     return period_data
 
+#***adding data to homepage_tt***
 mydb=db.establish_con("localhost", "manik", "sweetbread", "amizone")
 for periods in my_Classes_tt():
     script_home_tt = "','".join(periods)
     print(script_home_tt)
-    query_home_tt = "INSERT INTO amizone.homepage_tt(`date`,class_time,course_code,course_name,teacher, class_loc, attendance_status) VALUES ('" + script_home_tt + "');"
+    query_home_tt = "INSERT INTO amizone.homepage_tt (`date`,class_time, course_code,course_name,teacher,class_loc,attendance_status) VALUES ('" + script_home_tt + "');"
     print(query_home_tt)
-    mycursor=db.run_sql(mydb, query_home_tt)
+    try:
+        mycursor=db.run_sql(mydb, query_home_tt)
+    except errors.IntegrityError as err:
+        print(err)
     mydb.commit()
-            
+
+sort_query = "ALTER TABLE amizone.homepage_tt ORDER BY `#` ASC;"
+mycursor = db.run_sql(mydb, sort_query)
+mydb.commit()
 
 #***go to next/prev date in myClasses***
 prev_next_date = ""

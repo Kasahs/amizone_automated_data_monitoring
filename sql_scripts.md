@@ -1,0 +1,19 @@
+sql scripts i have used:
+```
+CREATE DATABASE amizone;
+```
+
+```
+--creates table homepage_tt in amizone db with composite primary keys on multiple columns and auto increment on # column  
+CREATE TABLE amizone.homepage_tt (
+    `#` INT auto_increment NOT NULL, 
+    `date` varchar(255), 
+    class_time varchar(255), 
+    course_code varchar(255),
+    course_name varchar(255),
+    teachhar(255),
+    class_loc varchar(255),
+    attendance_status varchar(255),
+    KEY(`#`), 
+    PRIMARY KEY(`date`(50),class_time(50), course_code(50), course_name(50), teacher(50),class_loc(50)));
+```
