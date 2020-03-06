@@ -209,9 +209,9 @@ for periods in my_Classes_tt():
         print(err)
     mydb.commit()
 
-sort_query = "ALTER TABLE amizone.homepage_tt ORDER BY `#` ASC;"
-mycursor = db.run_sql(mydb, sort_query)
-mydb.commit()
+# sort_query = "ALTER TABLE amizone.homepage_tt ORDER BY `#` ASC;"
+# mycursor = db.run_sql(mydb, sort_query)
+# mydb.commit()
 
 #***go to next/prev date in myClasses***
 prev_next_date = ""
