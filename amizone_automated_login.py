@@ -9,6 +9,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from mysql.connector import errors
+from selenium.webdriver.support import expected_conditions as EC
 # from selenium.webdriver.support import expected_conditions as EC
 
 # TODO: try to get info without opening browser(not possible)
@@ -30,18 +31,28 @@ start_time = time.time()  # stores time at which program starts
 # while(True):
 
 # ***setting up chrome driver***
+#for setting pageLoadStrategy:
 caps = DesiredCapabilities().CHROME
 #caps["pageLoadStrategy"] = "normal"  # complete
 caps["pageLoadStrategy"] = "eager"  #interactive
 #caps["pageLoadStrategy"] = "none"
-chromedriver = "/usr/share/chromedriver/chromedriver"
+chromedriver = "/opt/chromedriver"
+#to set options for headless mode
 #options = Options()
 #options.set_headless(headless=True)
+#code for not loading images:
+chrome_options = webdriver.ChromeOptions()
+prefs = {"profile.managed_default_content_settings.images": 2}
+chrome_options.add_experimental_option("prefs", prefs)
+
 driver = webdriver.Chrome(
-    #options=options,
+    chrome_options=chrome_options,
+    #options=options, 
     desired_capabilities=caps,
-    executable_path=chromedriver)
+    executable_path=chromedriver
+)
 driver.set_window_size(800, 1000)
+#to test for low speed connections(throttling):
 # driver.set_network_conditions(
 #     offline=False,
 #     latency=5,  # additional latency (ms)
@@ -50,7 +61,7 @@ driver.set_window_size(800, 1000)
 # driver.maximize_window()
 # wait = WebDriverWait(driver, 10)
 wait = driver.implicitly_wait(10)
-
+waitWebDriver = WebDriverWait(driver, 10)
 url = "https://student.amizone.net"
 driver.get(url)  # getting amizone.net
 
@@ -88,8 +99,6 @@ def login(username, password):
         print("couldn't complete login")
 
 # ***function to close popups***
-
-
 def close_popups():
     # try:
     page_soup = page_content_to_file("popup.html")
@@ -111,7 +120,8 @@ def close_popups():
         for name in reversed(popups_name):
             xpath = "//div[@id='" + name + "']//button[@class='close']"
             print(xpath)
-            driver.find_element(By.XPATH, xpath).click()
+            waitWebDriver.until(EC.element_to_be_clickable((By.XPATH, xpath))).click()
+            #driver.find_element(By.XPATH, xpath).click()
         print("clicks complete")
             # extra code
                 # wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#ModalPopAmityHostel button.btn"))).click()
@@ -137,16 +147,16 @@ def menu_click(option):
         print("clicked on timetable.")
         wait
 
-username = "username"#username here
-password = "password"#password here
+username = "7071804"#username here
+password = "gulabjamun"#password here
 
 # -----initial common activity------
 login(username, password)  # logs in
+time.sleep(2)
 close_popups()  # closes all popups
 # ----------------------------------
 
 # ***go to next/prev date in myClasses***
-
 checkpoint = input("enter something to go ahead")
 #***scraping my Classes timetable***
 def my_Classes_tt(days_span = 7, direction = 'backward'):
@@ -187,13 +197,15 @@ def my_Classes_tt(days_span = 7, direction = 'backward'):
         
         if(direction == 'backward'):
             #click | css=.fc-icon-right-single-arrow |
-            driver.find_element(By.CSS_SELECTOR, ".fc-prev-button").click()
+            #driver.find_element(By.CSS_SELECTOR, ".fc-prev-button").click()
+            waitWebDriver.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".fc-prev-button"))).click()
             print("clicked on prev")
             time.sleep(2)
         else:
-            driver.find_element(By.CSS_SELECTOR, ".fc-icon-right-single-arrow").click()
+            #driver.find_element(By.CSS_SELECTOR, ".fc-icon-right-single-arrow").click()
+            waitWebDriver.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".fc-icon-right-single-arrow"))).click()
             print("clicked on next")
-            time.sleep(2)
+            #time.sleep(2)
     return period_data
 
 #***adding data to homepage_tt***
@@ -313,6 +325,7 @@ for day_div in divs_class_tab_pane:  # selects each day's div from divs_class_ta
     # time.sleep(5)
     # driver.find_element(By.ID, "StudentSatisfactionPop").click()
     # url = driver.current_url
-# driver.quit()
+
+driver.quit()
 print("execution time: %ss" % (round(time.time() - start_time, 5)))
 #    time.sleep(10)
