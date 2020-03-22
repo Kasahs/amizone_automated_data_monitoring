@@ -8,3 +8,6 @@ __pycache__
 
 #node modules
 node_modules
+
+#test folder
+scraper/__test

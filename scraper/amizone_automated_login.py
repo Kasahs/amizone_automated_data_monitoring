@@ -78,7 +78,7 @@ def page_content_to_file(*argsv):
             'page_content_to_file cannot take more than 2 arguments')
     if(len(argsv) == 1):
         filename = argsv[0]
-        with open(filename, "w") as file:
+        with open("__test/" + filename, "w") as file:
             file.write(content)
             print("wrote to file {}".format(filename))
     return page_soup
@@ -101,7 +101,7 @@ def login(username, password):
 # ***function to close popups***
 def close_popups():
     # try:
-    page_soup = page_content_to_file("./test/popup.html")
+    page_soup = page_content_to_file("popup.html")
     #   getting names of divs having class 'modal fade in'
         # driver.implicitly_wait(10)
         # content = driver.page_source
@@ -162,7 +162,7 @@ checkpoint = input("enter something to go ahead")
 def my_Classes_tt(days_span = 7, direction = 'backward'):
     period_data = []
     for _ in range(1, days_span):
-        page_soup = page_content_to_file("./test/amizone.html")
+        page_soup = page_content_to_file("amizone.html")
         date = driver.find_element(By.XPATH, "//*[@id='calendar']/div[1]/div[3]/h2").text
         print(date)
         myClasses_table = page_soup.find("table", {"class": "fc-list-table"})
@@ -244,7 +244,7 @@ while(prev_next_date != "end"):
             break
     except exceptions.NoSuchElementException as e:
         print(e, "unable to click. Something may be blocking the element")
-    page_soup=page_content_to_file("./test/amizone.html")
+    page_soup=page_content_to_file("amizone.html")
     myClasses_table=page_soup.find("table", {"class": "fc-list-table"})
     print(myClasses_table)
 
