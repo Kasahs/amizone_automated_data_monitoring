@@ -1,15 +1,39 @@
-# import sys
+Skip to content
+Search or jump to…
+
+Pull requests
+Issues
+Marketplace
+Explore
+ 
+@hackasaur 
+hackasaur
+/
+amizone_automated_data_monitoring
+1
+00
+ Code Issues 0 Pull requests 0 Actions Projects 0 Wiki Security Insights Settings
+amizone_automated_data_monitoring/amizone_automated_login.py / 
+@hackasaur hackasaur added my Classes timetable scrapper
+3d1dd94 on 29 Jan
+267 lines (245 sloc)  11.8 KB
+ 
+Code navigation is available!
+Navigate your code with ease. Click on function and method calls to jump to their definitions or references in the same repository. Learn more
+
+You're using code navigation to jump to definitions or references.
+Learn more or give us feedback
+#import sys
 import time
 import db
-import re
 from bs4 import BeautifulSoup
 from selenium.common import exceptions
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-from mysql.connector import errors
-from selenium.webdriver.support import expected_conditions as EC
+
 # from selenium.webdriver.support import expected_conditions as EC
 
 # TODO: try to get info without opening browser(not possible)
@@ -22,37 +46,26 @@ from selenium.webdriver.support import expected_conditions as EC
 # TODO: organize code
 # TODO: do exception handling of the code
 # NOTE: program doesn't work if window is minimized
-# NOTE: popups don't close when pageLoadStrategy is eager
+# NOTE: popups don't close when pageLoadStrategy is eager try time.sleep()
 # NOTE: in amizone can't check both attendance and timetable without logging in again
-# TODO: no duplicate values should be added to the database
-# TODO: notification should be given if attendance not marked within few hours after the class
+# NOTE: myClasses timetable scraping doesn't work properly without time.sleep(2)
 start_time = time.time()  # stores time at which program starts
 
 # while(True):
 
 # ***setting up chrome driver***
-#for setting pageLoadStrategy:
 caps = DesiredCapabilities().CHROME
 #caps["pageLoadStrategy"] = "normal"  # complete
 caps["pageLoadStrategy"] = "eager"  #interactive
 #caps["pageLoadStrategy"] = "none"
-chromedriver = "/opt/chromedriver"
-#to set options for headless mode
+chromedriver = "/usr/share/chromedriver/chromedriver"
 #options = Options()
 #options.set_headless(headless=True)
-#code for not loading images:
-chrome_options = webdriver.ChromeOptions()
-prefs = {"profile.managed_default_content_settings.images": 2}
-chrome_options.add_experimental_option("prefs", prefs)
-
 driver = webdriver.Chrome(
-    chrome_options=chrome_options,
-    #options=options, 
+    #options=options,
     desired_capabilities=caps,
-    executable_path=chromedriver
-)
+    executable_path=chromedriver)
 driver.set_window_size(800, 1000)
-#to test for low speed connections(throttling):
 # driver.set_network_conditions(
 #     offline=False,
 #     latency=5,  # additional latency (ms)
@@ -61,12 +74,11 @@ driver.set_window_size(800, 1000)
 # driver.maximize_window()
 # wait = WebDriverWait(driver, 10)
 wait = driver.implicitly_wait(10)
-waitWebDriver = WebDriverWait(driver, 10)
+
 url = "https://student.amizone.net"
 driver.get(url)  # getting amizone.net
 
 # ***write page content to a file and return page soup***
-
 
 def page_content_to_file(*argsv):
     wait
@@ -84,8 +96,6 @@ def page_content_to_file(*argsv):
     return page_soup
 
 # ***function that enters login credentials***
-
-
 def login(username, password):
     try:
     # type | name=_UserName
@@ -120,8 +130,7 @@ def close_popups():
         for name in reversed(popups_name):
             xpath = "//div[@id='" + name + "']//button[@class='close']"
             print(xpath)
-            waitWebDriver.until(EC.element_to_be_clickable((By.XPATH, xpath))).click()
-            #driver.find_element(By.XPATH, xpath).click()
+            driver.find_element(By.XPATH, xpath).click()
         print("clicks complete")
             # extra code
                 # wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#ModalPopAmityHostel button.btn"))).click()
@@ -147,113 +156,72 @@ def menu_click(option):
         print("clicked on timetable.")
         wait
 
-username = "7071804"#username here
-password = "gulabjamun"#password here
+username = #enter username here
+password = #enter password here
 
-# -----initial common activity------
+#-----initial common activity------
 login(username, password)  # logs in
-time.sleep(2)
 close_popups()  # closes all popups
-# ----------------------------------
+#----------------------------------
 
-# ***go to next/prev date in myClasses***
 checkpoint = input("enter something to go ahead")
 #***scraping my Classes timetable***
-def my_Classes_tt(days_span = 7, direction = 'backward'):
+days_span = 7
+for i in range(1, days_span):
+    page_soup = page_content_to_file("amizone.html")
+    date = driver.find_element(By.XPATH, "//*[@id='calendar']/div[1]/div[3]/h2").text
+    print(date)
     period_data = []
-    for _ in range(1, days_span):
-        page_soup = page_content_to_file("amizone.html")
-        date = driver.find_element(By.XPATH, "//*[@id='calendar']/div[1]/div[3]/h2").text
-        print(date)
-        myClasses_table = page_soup.find("table", {"class": "fc-list-table"})
-        #print(myClasses_table)
-        if(myClasses_table != None):
-            if(myClasses_table.findAll("tr", {"class":"fc-list-item holiday-schedule-color"}) != []):
-                print("it's a holiday!")
-            else:
-                trs_of_classes = myClasses_table.findAll("tr", {"class":"fc-list-item class-schedule-color"})
-                #print(trs_of_classes)
-                for tr in trs_of_classes:
-                    class_time = tr.find("td", {"class":"fc-list-item-time fc-widget-content"}).text
-                    attendance_status_color = tr.find("td", {"class":"fc-list-item-marker fc-widget-content"}).span["style"]
-                    if(attendance_status_color == 'background-color:#4FCC4F'):
-                        attendance_status = "marked present"
-                    elif(attendance_status_color == 'background-color:#f00'):
-                        attendance_status = "marked absent"
-                    else:
-                        attendance_status = "not marked yet"
-                    td_course_teacher_loc = tr.find("td", {"class":"fc-list-item-title fc-widget-content"})
-                    course_code = td_course_teacher_loc.find("span", {"class":"course-name"}).text.strip()
-                    course_name = td_course_teacher_loc.find("a").text
-                    teacher = td_course_teacher_loc.find("span", {"class":"course-teacher"}).text.strip()
-                    course_name = re.search(course_code + '(.+?)' + teacher.split()[0], course_name).group(1).strip()
-                    print(course_name)
-                    class_loc = td_course_teacher_loc.find("span", {"class":"course-location"}).text.strip()
-                    period_data.append([date, class_time, course_code, course_name, teacher, class_loc, attendance_status])
-                    print(period_data)
-                    
-        else:
-            print("no classes today")
-        
-        if(direction == 'backward'):
-            #click | css=.fc-icon-right-single-arrow |
-            #driver.find_element(By.CSS_SELECTOR, ".fc-prev-button").click()
-            waitWebDriver.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".fc-prev-button"))).click()
-            print("clicked on prev")
-            time.sleep(2)
-        else:
-            #driver.find_element(By.CSS_SELECTOR, ".fc-icon-right-single-arrow").click()
-            waitWebDriver.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".fc-icon-right-single-arrow"))).click()
-            print("clicked on next")
-            #time.sleep(2)
-    return period_data
+    myClasses_table = page_soup.find("table", {"class": "fc-list-table"})
+    #print(myClasses_table)
+    if(myClasses_table != None):
+        trs_of_classes = myClasses_table.findAll("tr", {"class":"fc-list-item class-schedule-color"})
+        #print(trs_of_classes)
+        for tr in trs_of_classes:
+            class_time = tr.find("td", {"class":"fc-list-item-time fc-widget-content"}).text
+            class_attendance = tr.find("td", {"class":"fc-list-item-marker fc-widget-content"}).span["style"]
+            td_course_teacher_loc = tr.find("td", {"class":"fc-list-item-title fc-widget-content"})
+            course_name = td_course_teacher_loc.find("span", {"class":"course-name"}).text.strip()
+            teacher = td_course_teacher_loc.find("span", {"class":"course-teacher"}).text.strip()
+            class_loc = td_course_teacher_loc.find("span", {"class":"course-location"}).text.strip()
+            period_data.extend([class_time, class_attendance,course_name,teacher,class_loc])
+            
+            print(period_data)
+            period_data.clear()
+    else:
+        print("no classes today")
+    #click | css=.fc-icon-right-single-arrow |
+    driver.find_element(By.CSS_SELECTOR, ".fc-icon-right-single-arrow").click()
+    print("clicked on next")
+    time.sleep(2)
 
-#***adding data to homepage_tt***
-mydb=db.establish_con("localhost", "manik", "sweetbread", "amizone")
-for periods in my_Classes_tt():
-    script_home_tt = "','".join(periods)
-    print(script_home_tt)
-    query_home_tt = "INSERT INTO amizone.homepage_tt (`date`,class_time, course_code,course_name,teacher,class_loc,attendance_status) VALUES ('" + script_home_tt + "');"
-    print(query_home_tt)
-    try:
-        mycursor=db.run_sql(mydb, query_home_tt)
-    except errors.IntegrityError as err:
-        print(err)
-    mydb.commit()
-
-
-# sort_query = "ALTER TABLE amizone.homepage_tt ORDER BY `#` ASC;"
-# mycursor = db.run_sql(mydb, sort_query)
-# mydb.commit()
 
 #***go to next/prev date in myClasses***
 prev_next_date = ""
 while(prev_next_date != "end"):
-    date_prev_next = input("type prev/next:")
+    prev_next_date = input("type prev/next:")
     try:
         if(prev_next_date == "next"):
             # click | css=.fc-icon-right-single-arrow |
             driver.find_element(By.CSS_SELECTOR, ".fc-icon-right-single-arrow").click()
-            print(driver.find_element(By.XPATH, "//*[@id='calendar']/div[1]/div[3]/h2")).text
-            # print("clicked on next")
+            print(driver.find_element(By.XPATH, "//*[@id='calendar']/div[1]/div[3]/h2").text)
+            print("clicked on next")
         elif(prev_next_date == "prev"):
             # click | css=.fc-prev-button |
             driver.find_element(By.CSS_SELECTOR, ".fc-prev-button").click()
-            print(driver.find_element(By.XPATH, "//*[@id='calendar']/div[1]/div[3]/h2")).text
+            print(driver.find_element(By.XPATH, "//*[@id='calendar']/div[1]/div[3]/h2").text)
             print("clicked on previous")
-        else:
-            break
     except exceptions.NoSuchElementException as e:
         print(e, "unable to click. Something may be blocking the element")
-    page_soup=page_content_to_file("amizone.html")
-    myClasses_table=page_soup.find("table", {"class": "fc-list-table"})
+    page_soup = page_content_to_file("amizone.html")
+    myClasses_table = page_soup.find("table", {"class": "fc-list-table"})
     print(myClasses_table)
 
 #   get info about classes and attendance marked from myclasses
 # TODO: for a course check whether green or blue dot is shown
 # ***clicking on the hamburger button and choosing timetable***
 
-menu_click("timetable")
+menu_click("timetable") #clicks on timetable in the menu
 # ***scraping timetable***
 # print(driver.find_element(By.CLASS_NAME, "tab-content").text)
 # NOTE: no need to click on weekdays because all info is in the webpage
@@ -263,61 +231,54 @@ menu_click("timetable")
 
 # clicking on a day to get whole week's tt
 # page_soup = page_content_to_file("amizone_tt_page.html")
-# xpath of day no.1 of the week in the timetable at that time.
-weekday_xpath="//*[@id='myTab3']/li[1]/a"
+weekday_xpath = "//*[@id='myTab3']/li[1]/a" #xpath of day no.1 of the week in the timetable at that time.
 driver.find_element(By.XPATH, weekday_xpath).click()
 
-period_data=[]  # list to make sql statement
+period_data = [] #list to make sql statement
 # scraping timetable data
-page_soup=page_content_to_file()
-# finds and makes a list all the <div class="tab-pane in active" id="[day]">
-divs_class_tab_pane=page_soup.findAll("div", {"class": "tab-pane"})
-for day_div in divs_class_tab_pane:  # selects each day's div from divs_class_tab_pane list
+page_soup = page_content_to_file()
+divs_class_tab_pane = page_soup.findAll("div", {"class":"tab-pane"})  #finds and makes a list all the <div class="tab-pane in active" id="[day]">
+for day_div in divs_class_tab_pane:    #selects each day's div from divs_class_tab_pane list
     print()
-    # gets the id attribute of div tag e.g <div class="tab-pane in active" id="Sunday"> returns the day
-    day=day_div["id"].strip()
+    day = day_div["id"].strip()    #gets the id attribute of div tag e.g <div class="tab-pane in active" id="Sunday"> returns the day
     print(day)
     try:
         # find all <div class="thumbnail timetable-box"> elements which contains p tags of details of a class
-        div_thumbnail_timetable_box=day_div.findAll(
-            "div", {"class": "thumbnail timetable-box"})
+        div_thumbnail_timetable_box = day_div.findAll("div", {"class":"thumbnail timetable-box"})
         if(len(div_thumbnail_timetable_box) == 0):
             print("no classes alloted yet")
     except:
         print("no classes today")
     # selecting element one at a time from div_thumbnail_timetable_box
-    for ttbox in div_thumbnail_timetable_box:
-        period_data.append(day)  # appending day to list
+    for ttbox in div_thumbnail_timetable_box:   
+        period_data.append(day) #appending day to list
         print()
         # get text from <p class="class-time"> the class time
-        class_time=ttbox.find('p', {"class": "class-time"}).text.strip()
-        period_data.append(class_time)  # appending class time to list
+        class_time = ttbox.find('p', {"class":"class-time"}).text.strip()
+        period_data.append(class_time) #appending class time to list
         print(class_time)
         # get text from <p class="course-code"> the course code
-        course_code=ttbox.find('p', {"class": "course-code"}).text.strip()
-        period_data.append(course_code)  # appending course_code to list
+        course_code = ttbox.find('p', {"class":"course-code"}).text.strip()
+        period_data.append(course_code) #appending course_code to list
         print(course_code)
         # get text from <p class="course-teacher"> the course teacher
-        course_teacher=ttbox.find(
-            'p', {"class": "course-teacher"}).text.strip()
-        period_data.append(course_teacher)  # appending course_teacher to list
+        course_teacher = ttbox.find('p', {"class":"course-teacher"}).text.strip()
+        period_data.append(course_teacher) #appending course_teacher to list
         print(course_teacher)
-        class_location=ttbox.find('p', {"class": "class-loc"}).text.strip()
+        class_location = ttbox.find('p', {"class":"class-loc"}).text.strip()
         period_data.append(class_location)
         print(class_location)
         print(period_data)
 
         # connecting to database #TODO: exception handliling required here
-        mydb=db.establish_con("localhost", "manik", "sweetbread", "amizone")
-        script="','".join(period_data)
-        #period_data.clear()
-        query="INSERT INTO amizone.tt_data(`day`,`time`,course,teacher, class_loc) VALUES ('" + script + "');"
-        print(query)
+        mydb = db.establish_con("localhost", "manik", "sweetbread","amizone")
+        script = "','".join(period_data)
+        period_data.clear()
+        query = "INSERT INTO amizone.tt_data(`day`,`time`,course,teacher, class_loc) VALUES ('" + script + "');"
         # running MySQL query in the database
-        mycursor=db.run_sql(mydb, query)
+        mycursor = db.run_sql(mydb, query)
         # mycursor = db.run_sql(mydb, "SELECT * FROM amizone.tt_data;")
         mydb.commit()
-        period_data.clear()
 
 # extra code
     # date = driver.find_element(By.XPATH, "//*[@id='calendar']/div[1]/div[3]/h2").text #to get the date of myClasses
@@ -326,7 +287,18 @@ for day_div in divs_class_tab_pane:  # selects each day's div from divs_class_ta
     # time.sleep(5)
     # driver.find_element(By.ID, "StudentSatisfactionPop").click()
     # url = driver.current_url
-
-driver.quit()
+# driver.quit()
 print("execution time: %ss" % (round(time.time() - start_time, 5)))
 #    time.sleep(10)
+© 2020 GitHub, Inc.
+Terms
+Privacy
+Security
+Status
+Help
+Contact GitHub
+Pricing
+API
+Training
+Blog
+About

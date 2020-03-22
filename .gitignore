@@ -1,0 +1,10 @@
+# IDE crap
+.vscode
+#python cached modules
+__pycache__
+*.pyc
+# jupiter
+.ipynb_checkpoints
+
+#node modules
+node_modules
