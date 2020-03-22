@@ -38,8 +38,8 @@ with requests.Session() as s:
     }
     print(login_data)
     r2 = s.post(url, data=login_data, headers = headers)
-    with open('amizone_requests.html', 'w') as f:
-        f.write(r2.text)4
+    with open('./test/amizone_requests.html', 'w') as f:
+        f.write(r2.text)
 
     
 
