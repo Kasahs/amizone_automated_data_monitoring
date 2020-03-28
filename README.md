@@ -1,17 +1,15 @@
 # amizone_automated_data_monitoring
-this is a project to make an app that can automatically fetch relevant data from student.amizone.net
+this is an app in progress that will automatically fetch relevant data from student.amizone.net and show it in a more useful way
 
-## Aim
-To create an android app for students in which users enter their amizone's username and password, to get information such as weekly timetable, grades, etc. 
-
-
+## aim
+To create an app for students in which users can get information such as weekly timetable, grades, etc. 
 
 ## what i have done so far
-* wrote program to automate logging in and fetching of timetable data from the website
+* wrote program to automate logging in and fetching of timetable data from the website and stored data in a database.
 
 ## what I plan to do
 * add fetched data to database using mysql
-* make android app that retrieves username, password from the user
+* make app that retrieves username, password from the user
 * fetch examination data and add it to database
 
 ## amizone automated login, navigation and data scrapping
