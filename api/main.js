@@ -40,38 +40,32 @@ const createConnection = () => {
 
 const fetchTimeTable = (connection) => {
 
-  whereQuery = (weekdayNumber) => {
-    query = `WHERE WEEKDAY(\`date\`) = ${weekdayNumber};`
-    return query
-  }
-  main_query = 'SELECT class_time, course_name, class_loc, `date` FROM homepage_tt '
-  
   const promise = new Promise((resolve, reject) => {
     connection.connect();
-        query = main_query + whereQuery(i)
-      connection.query(query, function (error, results, fields) {
-        if (error) { return reject(err) }
-        // for(const result of results){
-        //   console.log(result.course_name)
-        // }
-        const refinedResults = results.map((result) => {
-          return {
-            courseName: result.course_name,
-            courseTime: result.class_time,
-            classLoc: result.class_loc,
-            classDate: result.date
-          }
-        });
-        refinedResults.forEach(element => {
-          if (element.class_time == time_slot_dict.nine_to_ten) {
-            period = element.class_name;
-          }
-        });
-        connection.end();
-        return resolve(refinedResults)
-      })
-    
+    query = 'SELECT class_time, course_name, class_loc, `date` FROM homepage_tt '
+    connection.query(query, function (error, results, fields) {
+      if (error) { return reject(err) }
+      // for(const result of results){
+      //   console.log(result.course_name)
+      // }
+      const refinedResults = results.map((result) => {
+        return {
+          courseName: result.course_name,
+          courseTime: result.class_time,
+          classLoc: result.class_loc,
+          classDate: result.date
+        }
+      });
+      refinedResults.forEach(element => {
+        if (element.class_time == time_slot_dict.nine_to_ten) {
+          period = element.class_name;
+        }
+      });
+      connection.end();
+      return resolve(refinedResults)
     })
+
+  })
   return promise
 
 }
