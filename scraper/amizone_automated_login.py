@@ -1,6 +1,6 @@
-# import sys
 import time
 import db
+from datetime import datetime
 import re
 from bs4 import BeautifulSoup
 from selenium.common import exceptions
@@ -15,29 +15,29 @@ from selenium.webdriver.support import expected_conditions as EC
 # TODO: try to get info without opening browser(not possible)
 # TODO: close all pop-ups without specifying name(done)
 # TODO: find the div id for the corresponding close button(done)
-# TODO: extract data from amizone using beautifulSoup
-# TODO: add data to database using mysql
-# TODO: make a mechanism to navigate myclasses through input and get data
+# TODO: extract data from amizone using beautifulSoup(done)
+# TODO: add data to database using mysql(done)
+# TODO: make a mechanism to navigate myclasses through input and get data(done)
 # TODO: figure out how to make useful information from data
 # TODO: organize code
 # TODO: do exception handling of the code
-# NOTE: program doesn't work if window is minimized
-# NOTE: popups don't close when pageLoadStrategy is eager
+# NOTE: program doesn't work if window is minimized(solved)
+# NOTE: popups don't close when pageLoadStrategy is eager(solved)
 # NOTE: in amizone can't check both attendance and timetable without logging in again
-# TODO: no duplicate values should be added to the database
+# TODO: no duplicate values should be added to the database(done)
 # TODO: notification should be given if attendance not marked within few hours after the class
+# TODO: mysql details should not be hardcoded
 start_time = time.time()  # stores time at which program starts
 
-# while(True):
-
-# ***setting up chrome driver***
+# ***chrome driver settings***
 #for setting pageLoadStrategy:
 caps = DesiredCapabilities().CHROME
 #caps["pageLoadStrategy"] = "normal"  # complete
 caps["pageLoadStrategy"] = "eager"  #interactive
 #caps["pageLoadStrategy"] = "none"
+#path to chrome drive:
 chromedriver = "/opt/chromedriver"
-#to set options for headless mode
+#to set options for headless mode:
 #options = Options()
 #options.set_headless(headless=True)
 #code for not loading images:
@@ -45,12 +45,14 @@ chrome_options = webdriver.ChromeOptions()
 prefs = {"profile.managed_default_content_settings.images": 2}
 chrome_options.add_experimental_option("prefs", prefs)
 
+#making driver object with params
 driver = webdriver.Chrome(
     chrome_options=chrome_options,
     #options=options, 
     desired_capabilities=caps,
     executable_path=chromedriver
 )
+
 driver.set_window_size(800, 1000)
 #to test for low speed connections(throttling):
 # driver.set_network_conditions(
@@ -60,8 +62,9 @@ driver.set_window_size(800, 1000)
 #     upload_throughput=500 * 1024)  # maximal throughput
 # driver.maximize_window()
 # wait = WebDriverWait(driver, 10)
-wait = driver.implicitly_wait(10)
-waitWebDriver = WebDriverWait(driver, 10)
+implicitWait = driver.implicitly_wait(10)
+wait = WebDriverWait(driver, 10)
+
 url = "https://student.amizone.net"
 driver.get(url)  # getting amizone.net
 
@@ -69,7 +72,7 @@ driver.get(url)  # getting amizone.net
 
 
 def page_content_to_file(*argsv):
-    wait
+    implicitWait
     content = driver.page_source
     page_soup = BeautifulSoup(content, "html.parser")
     #page_soup_text = BeautifulSoup.prettify(page_soup)
@@ -120,7 +123,7 @@ def close_popups():
         for name in reversed(popups_name):
             xpath = "//div[@id='" + name + "']//button[@class='close']"
             print(xpath)
-            waitWebDriver.until(EC.element_to_be_clickable((By.XPATH, xpath))).click()
+            wait.until(EC.element_to_be_clickable((By.XPATH, xpath))).click()
             #driver.find_element(By.XPATH, xpath).click()
         print("clicks complete")
             # extra code
@@ -145,7 +148,6 @@ def menu_click(option):
         #   clicking on the timetable button in the menu
         driver.find_element(By.XPATH, time_table_navbar_xpath).click()
         print("clicked on timetable.")
-        wait
 
 username = "7071804"#username here
 password = "gulabjamun"#password here
@@ -159,11 +161,23 @@ close_popups()  # closes all popups
 # ***go to next/prev date in myClasses***
 checkpoint = input("enter something to go ahead")
 #***scraping my Classes timetable***
+
+def convert_date(date , date_format, desired_date_format):
+    dt_date = datetime.strptime(date, date_format)
+    return datetime.strftime(dt_date, desired_date_format)
+
 def my_Classes_tt(days_span = 7, direction = 'backward'):
     period_data = []
+    date_format = "%B %d, %Y" 
+    sql_date_format = "%Y-%m-%d"
     for _ in range(1, days_span):
         page_soup = page_content_to_file("amizone.html")
-        date = driver.find_element(By.XPATH, "//*[@id='calendar']/div[1]/div[3]/h2").text
+        amizone_date = driver.find_element(By.XPATH, "//*[@id='calendar']/div[1]/div[3]/h2").text
+        # #print(date_raw)
+        # dt_date = datetime.strptime(date_raw, date_format) #converting amizones' date into datetime object to convert it to string
+        # print(dt_date)
+        # date = datetime.strftime(dt_date, sql_date_format) #converting datetime object to string for later inserting into mysql database
+        date = convert_date(amizone_date, date_format, sql_date_format)
         print(date)
         myClasses_table = page_soup.find("table", {"class": "fc-list-table"})
         #print(myClasses_table)
@@ -198,12 +212,12 @@ def my_Classes_tt(days_span = 7, direction = 'backward'):
         if(direction == 'backward'):
             #click | css=.fc-icon-right-single-arrow |
             #driver.find_element(By.CSS_SELECTOR, ".fc-prev-button").click()
-            waitWebDriver.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".fc-prev-button"))).click()
+            wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".fc-prev-button"))).click()
             print("clicked on prev")
             time.sleep(2)
         else:
             #driver.find_element(By.CSS_SELECTOR, ".fc-icon-right-single-arrow").click()
-            waitWebDriver.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".fc-icon-right-single-arrow"))).click()
+            wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".fc-icon-right-single-arrow"))).click()
             print("clicked on next")
             #time.sleep(2)
     return period_data

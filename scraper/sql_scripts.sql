@@ -6,11 +6,11 @@ CREATE DATABASE amizone;
 
 CREATE TABLE amizone.homepage_tt (
     `#` INT auto_increment NOT NULL, 
-    `date` varchar(255), 
+    `date` DATE, 
     class_time varchar(255), 
     course_code varchar(255),
     course_name varchar(255),
-    teacher(255),
+    teacher varchar(255),
     class_loc varchar(255),
     attendance_status varchar(255),
     KEY(`#`), 
