@@ -5,11 +5,9 @@ window.addEventListener("load", async () => {
 const main = async () => {
   // put all stuff here
 
-  const el = document.getElementById("el")
-
-  const res = await fetch("http://localhost:3000/api/timetable")
-  const data = await res.json()
-  console.dir(data)
+  //   const res = await fetch("http://localhost:3000/api/timetable")
+  //   const data = await res.json()
+  //   console.dir(data)
 
   //   el.innerHTML = data.map(d => `<li>${d.courseName}</li>`).join(",<br>")
   const timeTable = {
@@ -33,7 +31,7 @@ const main = async () => {
   ]
 
   const days = ["monday", "tuesday", "wednesday"]
-
+  const el = document.getElementById("el")
   renderTimeTable(el, timeTable, days, slots)
 }
 
